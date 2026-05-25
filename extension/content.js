@@ -1,92 +1,117 @@
 // Memora Companion - Content Script
-// Smart live context injection (real-time suggestions)
+// Smart live context injection (polished UI)
 
-console.log('Memora Companion loaded with smart suggestions');
+console.log('Memora Companion loaded with polished smart suggestions');
 
 let debounceTimer = null;
+let currentSuggestions = [];
 const SITE = window.location.hostname;
 
-// ... (existing extract functions for different sites remain)
-
-function getCurrentInputText() {
-    // Try common input selectors for major AI sites
-    const selectors = [
-        'textarea', 
-        'div[contenteditable="true"]', 
-        'input[type="text"]', 
-        '[data-testid="chat-input"]', 
-        '.ProseMirror'
-    ];
-    
-    for (const selector of selectors) {
-        const el = document.querySelector(selector);
-        if (el && el.value) return el.value.trim();
-        if (el && el.innerText) return el.innerText.trim();
-    }
-    return '';
-}
+// ... (existing helper functions remain)
 
 function showSmartSuggestions(suggestions) {
-    // Remove old suggestion UI
     const old = document.getElementById('memora-smart-suggestions');
     if (old) old.remove();
 
     if (!suggestions || suggestions.length === 0) return;
+    currentSuggestions = suggestions;
 
     const container = document.createElement('div');
     container.id = 'memora-smart-suggestions';
-    container.style.cssText = 'position:fixed;bottom:80px;right:20px;background:#111;border:1px solid #333;border-radius:12px;padding:12px;max-width:320px;z-index:99999;box-shadow:0 10px 30px rgba(0,0,0,0.4)';
-    
-    let html = '<div style="font-size:12px;color:#888;margin-bottom:8px">Smart suggestions from your memory</div>';
-    
-    suggestions.forEach(s => {
+    container.style.cssText = `
+        position: fixed;
+        bottom: 90px;
+        right: 24px;
+        background: #0f0f0f;
+        border: 1px solid #2a2a2a;
+        border-radius: 14px;
+        padding: 8px;
+        max-width: 340px;
+        z-index: 999999;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        animation: memoraFadeIn 0.15s ease-out;
+    `;
+
+    let html = `<div style="padding: 6px 12px; font-size: 11px; color: #666; letter-spacing: 0.5px;">Smart context from your memory</div>`;
+
+    suggestions.forEach((s, index) => {
         html += `
-            <div onclick="injectContext('${s.content.replace(/'/g, "\\'")}')" 
-                 style="padding:10px;margin:6px 0;background:#1a1a1a;border-radius:8px;cursor:pointer;border:1px solid #333">
-                <div style="font-size:13px;line-height:1.4;color:#ddd">${s.content.substring(0, 140)}${s.content.length > 140 ? '...' : ''}</div>
-                <div style="font-size:10px;color:#666;margin-top:4px">${s.source} • ${s.relevance_reason}</div>
+            <div class="memora-suggestion" data-index="${index}"
+                 style="padding: 11px 14px; margin: 4px 0; background: #1a1a1a; border-radius: 10px; cursor: pointer; transition: all 0.1s ease; border: 1px solid transparent;">
+                <div style="font-size: 13.5px; line-height: 1.35; color: #e5e5e5; margin-bottom: 4px;">
+                    ${s.content.substring(0, 130)}${s.content.length > 130 ? '...' : ''}
+                </div>
+                <div style="font-size: 10.5px; color: #777; display: flex; align-items: center; gap: 6px;">
+                    <span style="background: #2a2a2a; padding: 1px 6px; border-radius: 4px; font-size: 9.5px;">${s.source}</span>
+                    <span>${s.relevance_reason}</span>
+                </div>
             </div>
         `;
     });
-    
+
     container.innerHTML = html;
     document.body.appendChild(container);
-    
-    // Auto-hide after 8 seconds
-    setTimeout(() => { if (container.parentNode) container.parentNode.removeChild(container); }, 8000);
+
+    // Hover effects
+    container.querySelectorAll('.memora-suggestion').forEach(el => {
+        el.addEventListener('mouseenter', () => {
+            el.style.background = '#242424';
+            el.style.borderColor = '#3a3a3a';
+        });
+        el.addEventListener('mouseleave', () => {
+            el.style.background = '#1a1a1a';
+            el.style.borderColor = 'transparent';
+        });
+        el.addEventListener('click', () => {
+            const index = parseInt(el.dataset.index);
+            injectContext(currentSuggestions[index].content);
+        });
+    });
+
+    // Click outside to close
+    setTimeout(() => {
+        document.addEventListener('click', function handler(e) {
+            if (!container.contains(e.target)) {
+                container.remove();
+                document.removeEventListener('click', handler);
+            }
+        }, { once: true });
+    }, 100);
+
+    // Auto-hide after 12 seconds
+    setTimeout(() => {
+        if (container.parentNode) container.parentNode.removeChild(container);
+    }, 12000);
 }
 
 function injectContext(content) {
-    // Find the active input and insert the context
     const input = document.querySelector('textarea, div[contenteditable="true"], [data-testid="chat-input"]');
     if (input) {
+        const prefix = input.value !== undefined ? input.value : input.innerText;
         if (input.value !== undefined) {
-            input.value = content + '\n\n' + input.value;
+            input.value = content + '\n\n' + prefix;
         } else {
-            input.innerText = content + '\n\n' + input.innerText;
+            input.innerText = content + '\n\n' + prefix;
         }
         input.dispatchEvent(new Event('input', { bubbles: true }));
     }
-    // Remove suggestion UI
     const suggestionsUI = document.getElementById('memora-smart-suggestions');
     if (suggestionsUI) suggestionsUI.remove();
 }
 
-// Real-time input monitoring
+// Real-time monitoring + smart suggestions
 setInterval(() => {
     const text = getCurrentInputText();
-    if (text.length > 15 && text !== window.lastSentText) {
+    if (text.length > 12 && text !== window.lastSentText) {
         window.lastSentText = text;
-        
-        // Send to backend for smart suggestions
         chrome.runtime.sendMessage({
             type: 'get_smart_suggestions',
             data: { current_text: text }
         });
     }
-}, 1200);
+}, 1100);
 
-// Listen for smart suggestions from background
 chrome.runtime.onMessage.addListener((message) => {
     if (message.type === 'smart_suggestions') {
         showSmartSuggestions(message.suggestions);
