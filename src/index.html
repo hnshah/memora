@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memora</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+        body { font-family: 'Inter', system_ui, sans-serif; }
+    </style>
+</head>
+<body class="bg-zinc-950 text-zinc-200">
+    <div class="max-w-4xl mx-auto p-8">
+        <div class="flex items-center gap-3 mb-8">
+            <div class="w-10 h-10 bg-emerald-500 rounded-2xl flex items-center justify-center">
+                <span class="text-xl">🧠</span>
+            </div>
+            <div>
+                <h1 class="text-4xl font-semibold tracking-tighter">Memora</h1>
+                <p class="text-emerald-400 text-sm -mt-1">Your private memory layer</p>
+            </div>
+        </div>
+
+        <!-- Search -->
+        <div class="mb-8">
+            <div class="relative">
+                <input id="search-input" type="text" 
+                       class="w-full bg-zinc-900 border border-zinc-800 rounded-3xl px-6 py-4 text-lg focus:outline-none focus:border-emerald-500 placeholder-zinc-500"
+                       placeholder="Search your memory... (e.g. project roadmap decision)">
+                <button onclick="performSearch()" 
+                        class="absolute right-3 top-3 bg-emerald-600 hover:bg-emerald-500 px-6 py-2 rounded-2xl text-sm font-medium">
+                    Search
+                </button>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="grid grid-cols-3 gap-4 mb-8" id="stats">
+            <!-- Populated by JS -->
+        </div>
+
+        <!-- Results -->
+        <div id="results" class="space-y-4">
+            <!-- Dynamic results -->
+        </div>
+    </div>
+
+    <script>
+        async function invoke(cmd, args = {}) {
+            if (window.__TAURI__) {
+                return window.__TAURI__.core.invoke(cmd, args);
+            }
+            console.log('Mock invoke:', cmd, args);
+            if (cmd === 'get_memory_stats') return { total_chunks: 1247, sources: ['chatgpt','claude'], embedding_model: 'nomic-embed-text' };
+            if (cmd === 'search_memory') return [{ id: 'demo', content: 'Mock result for: ' + args.query, source: 'chatgpt', score: 0.93 }];
+            return {};
+        }
+
+        async function loadStats() {
+            const stats = await invoke('get_memory_stats');
+            const container = document.getElementById('stats');
+            container.innerHTML = `
+                <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-4">
+                    <div class="text-3xl font-semibold">${stats.total_chunks}</div>
+                    <div class="text-sm text-zinc-500">chunks indexed</div>
+                </div>
+                <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-4">
+                    <div class="text-3xl font-semibold">${stats.sources.length}</div>
+                    <div class="text-sm text-zinc-500">sources connected</div>
+                </div>
+                <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-4">
+                    <div class="text-xl font-medium">${stats.embedding_model}</div>
+                    <div class="text-sm text-zinc-500">embedding model</div>
+                </div>
+            `;
+        }
+
+        async function performSearch() {
+            const query = document.getElementById('search-input').value.trim();
+            if (!query) return;
+            const resultsContainer = document.getElementById('results');
+            resultsContainer.innerHTML = '<div class="text-center py-8 text-zinc-500">Searching memory...</div>';
+            try {
+                const results = await invoke('search_memory', { query, limit: 8 });
+                resultsContainer.innerHTML = results.map(r => `
+                    <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 hover:border-emerald-900 transition-colors">
+                        <div class="flex justify-between items-start mb-3">
+                            <div class="text-xs px-3 py-1 bg-zinc-800 rounded-full">${r.source}</div>
+                            <div class="text-emerald-400 text-sm font-mono">${(r.score * 100).toFixed(0)}% match</div>
+                        </div>
+                        <div class="text-lg leading-snug">${r.content}</div>
+                        <div class="mt-4 text-xs text-zinc-500">${r.metadata?.timestamp || ''}</div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                resultsContainer.innerHTML = `<div class="text-red-400">Error: ${e}</div>`;
+            }
+        }
+
+        window.onload = () => {
+            loadStats();
+            const input = document.getElementById('search-input');
+            input.focus();
+            input.addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(); });
+        }
+    </script>
+</body>
+</html>
