@@ -1,19 +1,18 @@
-# Memora File List
+# Memora Complete File List (as of latest build)
 
-This is the complete list of source files in the local sandbox as of the latest build.
-
-## Core
+## Root
 - README.md
 - CONTRIBUTING.md
 - .gitignore
 - RELEASE_NOTES.md
+- FILES_LIST.md
 
 ## Extension
 - extension/manifest.json
 - extension/content.js
 - extension/background.js
 
-## Desktop App
+## Desktop App (Rust)
 - src-tauri/Cargo.toml
 - src-tauri/src/lib.rs
 - src-tauri/src/main.rs
@@ -28,4 +27,4 @@ This is the complete list of source files in the local sandbox as of the latest 
 ## CI
 - .github/workflows/ci.yml
 
-(Additional build scripts and docs can be added as needed)
+This list covers all the core source files we've built. The .git folder is excluded.
