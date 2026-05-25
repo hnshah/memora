@@ -1,18 +1,21 @@
-# Memora Complete File List (as of latest build)
+# Complete Memora File List
 
 ## Root
 - README.md
 - CONTRIBUTING.md
-- .gitignore
 - RELEASE_NOTES.md
 - FILES_LIST.md
+- .gitignore
 
-## Extension
+## GitHub
+- .github/workflows/ci.yml
+
+## Extension (Browser)
 - extension/manifest.json
 - extension/content.js
 - extension/background.js
 
-## Desktop App (Rust)
+## Desktop (Tauri)
 - src-tauri/Cargo.toml
 - src-tauri/src/lib.rs
 - src-tauri/src/main.rs
@@ -24,7 +27,4 @@
 - docs/critic-prompts/general-adversarial-review.md
 - docs/critic-prompts/security-privacy-review.md
 
-## CI
-- .github/workflows/ci.yml
-
-This list covers all the core source files we've built. The .git folder is excluded.
+This list will be updated as we push more files.
