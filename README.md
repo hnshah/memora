@@ -1,0 +1,1 @@
+Memora — Your private, local-first AI memory layer. Auto-index every conversation across ChatGPT, Claude, Gemini, Cursor, and more — stored encrypted on your machine. Semantic recall that actually works. Open source.
