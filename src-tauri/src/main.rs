@@ -1,23 +1,20 @@
-// Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use memora::AppState;
-use tauri::Manager;
-
-mod lib;
+mod commands;
 
 fn main() {
     tauri::Builder::default()
-        .manage(AppState::default())
-        .setup(|app| {
-            println!("Memora backend starting... (LanceDB + Ollama ready)");
+        .manage(commands::AppState::default())
+        .setup(|_app| {
+            println!("Memora backend starting...");
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            memora::initialize_memory,
-            memora::index_conversation,
-            memora::search_memory,
-            memora::get_memory_stats
+            commands::initialize_memory,
+            commands::index_conversation,
+            commands::search_memory,
+            commands::get_memory_stats,
+            commands::get_smart_suggestions,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
